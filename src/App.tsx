@@ -29,6 +29,7 @@ function App() {
   const [logs, setLogs] = useState<string[]>([]);
   const [isExecuting, setIsExecuting] = useState(false);
   const [taskState, setTaskState] = useState<TaskState | null>(null);
+  const [installLogs, setInstallLogs] = useState<string[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -48,16 +49,22 @@ function App() {
   };
 
   const handleInstallCli = async () => {
+    if (!envStatus.npm) {
+      setInstallLogs(['❌ 请先在电脑上安装 Node.js (https://nodejs.org/)']);
+      return;
+    }
+    
     setEnvStatus(prev => ({ ...prev, checking: true }));
-    setLogs(['开始安装 meitu-cli...']);
+    setInstallLogs(['> 开始安装 meitu-cli，这可能需要几十秒时间，请耐心等待...']);
     const res = await installMeituCli((log) => {
-      setLogs(prev => [...prev, log]);
+      setInstallLogs(prev => [...prev, log]);
     });
+    
     if (res.success) {
-      setLogs(prev => [...prev, '安装成功！']);
+      setInstallLogs(prev => [...prev, '✅ 安装成功！']);
       await checkEnvironment();
     } else {
-      setLogs(prev => [...prev, `安装失败: ${res.error}`]);
+      setInstallLogs(prev => [...prev, `❌ 安装失败，请检查网络或权限:\n${res.error || res.output}`]);
       setEnvStatus(prev => ({ ...prev, checking: false }));
     }
   };
@@ -296,6 +303,18 @@ function App() {
                 </button>
               )}
             </div>
+          </div>
+        )}
+        
+        {/* 安装日志展示区域 */}
+        {installLogs.length > 0 && !envStatus.meitu && (
+          <div className="mt-4 p-3 bg-gray-900 rounded-md border border-gray-800 h-[150px] overflow-y-auto">
+            <div className="text-xs font-mono text-gray-300 space-y-1 whitespace-pre-wrap">
+              {installLogs.map((log, i) => (
+                <div key={i}>{log}</div>
+              ))}
+            </div>
+            <div ref={logsEndRef} />
           </div>
         )}
       </div>

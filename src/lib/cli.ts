@@ -55,7 +55,7 @@ export const checkMeituCli = async (): Promise<boolean> => {
   return await runCommandWithFallbacks('meitu', ['--version']);
 };
 
-export const installMeituCli = async (onLog?: (log: string) => void): Promise<{success: boolean, error?: string}> => {
+export const installMeituCli = async (onLog?: (log: string) => void): Promise<{success: boolean, output?: string, error?: string}> => {
   const isWindows = navigator.userAgent.toLowerCase().includes('windows');
   try {
     // npm install -g meitu-cli
@@ -80,14 +80,19 @@ export const installMeituCli = async (onLog?: (log: string) => void): Promise<{s
     }
 
     if (onLog) {
-      cmd.on('close', data => onLog(`[Exit] ${data.code}`));
-      cmd.on('error', error => onLog(`[Error] ${error}`));
+      // 获取输出流
       cmd.stdout.on('data', line => onLog(line));
       cmd.stderr.on('data', line => onLog(line));
+      
+      const output = await cmd.execute();
+      if (output.code !== 0 && output.stderr) {
+         onLog(output.stderr);
+      }
+      return { success: output.code === 0, output: output.stdout, error: output.stderr };
+    } else {
+      const output = await cmd.execute();
+      return { success: output.code === 0, output: output.stdout, error: output.stderr };
     }
-    
-    const output = await cmd.execute();
-    return { success: output.code === 0, error: output.stderr };
   } catch (e: any) {
     return { success: false, error: e.toString() };
   }
