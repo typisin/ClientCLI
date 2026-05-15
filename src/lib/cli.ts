@@ -132,7 +132,8 @@ export const installMeituCli = async (onLog?: (log: string) => void): Promise<{s
 };
 
 const MEITU_ENV = {
-  MEITU_OPENAPI_BASE_URL: 'https://openapi.mtlab.meitu.com'
+  MEITU_OPENAPI_BASE_URL: 'https://openapi.mtlab.meitu.com',
+  MEITU_OPENAPI_STRATEGY_BASE_URL: 'https://openapi.mtlab.meitu.com'
 };
 
 export const configAkSk = async (ak: string, sk: string): Promise<{success: boolean, error?: string}> => {
