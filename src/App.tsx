@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { checkNpm, checkMeituCli, installMeituCli, runMeituCommand, installNodeJs } from './lib/cli';
+import { checkNpm, checkMeituCli, installMeituCli, runMeituCommand, runMeituCommandNativeBatch, installNodeJs } from './lib/cli';
 import { AlertCircle, CheckCircle2, Settings, Terminal, TerminalSquare, Loader2, Play, Image as ImageIcon, Folder, FolderOpen, Download } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir, mkdir, exists } from '@tauri-apps/plugin-fs';
@@ -204,21 +204,21 @@ function App() {
     
     try {
         let imagePaths: string[] = [];
-        
-        // 我们统一把文件输出到用户指定的 outputDir 目录里
-        try {
-          const dirExists = await exists(outputDir);
-          if (!dirExists) {
-            await mkdir(outputDir, { recursive: true });
-          }
-        } catch (e) {
-          console.error('检测或创建输出目录失败:', e);
-          setLogs(prev => [...prev, '❌ 输出目录异常，请检查权限或重新选择']);
-          setIsExecuting(false);
-          return;
+      
+      // 我们统一把文件输出到用户指定的 outputDir 目录里
+      try {
+        const dirExists = await exists(outputDir);
+        if (!dirExists) {
+          await mkdir(outputDir, { recursive: true });
         }
+      } catch (e) {
+        console.error('检测或创建输出目录失败:', e);
+        setLogs(prev => [...prev, '❌ 输出目录异常，请检查权限或重新选择']);
+        setIsExecuting(false);
+        return;
+      }
 
-        if (isFolder) {
+      if (isFolder) {
         setLogs([`> 正在读取文件夹: ${imageUrl}`]);
         const entries = await readDir(imageUrl);
         imagePaths = entries
@@ -230,51 +230,21 @@ function App() {
           setIsExecuting(false);
           return;
         }
-        setLogs(prev => [...prev, `✅ 找到 ${imagePaths.length} 张图片，开始批量处理...`]);
+        setLogs(prev => [...prev, `✅ 找到 ${imagePaths.length} 张图片，即将打开系统终端进行处理...`]);
         setTaskState({ total: imagePaths.length, current: 0, outputDir: null });
       } else {
         imagePaths = [imageUrl];
+        setLogs([`> 准备处理单张图片，即将打开系统终端...`]);
       }
 
-      let lastOutputPath: string | null = null;
-      let successCount = 0;
-
-      for (let i = 0; i < imagePaths.length; i++) {
-        const currentImg = imagePaths[i];
-        if (isFolder) {
-          setLogs(prev => [...prev, `\n> [${i + 1}/${imagePaths.length}] 正在处理: ${currentImg.split('/').pop()}`]);
-          setTaskState(prev => prev ? { ...prev, current: i + 1 } : null);
-        } else {
-          setLogs([`> meitu image-superres-enhance --image_url "${currentImg}" --prompt "${prompt}" --json`]);
-        }
-        
-        // 将用户选择的 outputDir 作为 --download-dir 传给 CLI，由 CLI 原生负责下载
-        const args = ['image-superres-enhance', '--image_url', currentImg, '--prompt', prompt, '--download-dir', outputDir, '--json'];
-        const res = await runMeituCommand(args, (log) => {
-          setLogs(prev => [...prev, log]);
-        });
-
-        if (res.success) {
-          let outPath = parseOutputPath(res.output);
-          
-          if (outPath) {
-            lastOutputPath = outPath;
-            setLogs(prev => [...prev, `✅ 处理成功，保存至: ${outPath}`]);
-          } else {
-            setLogs(prev => [...prev, `✅ 处理成功 (解析路径失败)\n完整输出: ${res.output}`]);
-          }
-          successCount++;
-        } else {
-          setLogs(prev => [...prev, `❌ 处理失败 (Code ${res.success}):\nOutput: ${res.output}\nError: ${res.error}`]);
-        }
-      }
-
-      if (isFolder) {
-        setLogs(prev => [...prev, `\n✨ 批量处理完成！成功: ${successCount}/${imagePaths.length}`]);
-      }
+      setLogs(prev => [...prev, '\n🚀 已在独立的终端窗口中启动处理任务！\n请查看弹出的终端窗口以了解实时进度。处理完成后，终端会提示"All tasks completed!"。']);
       
-      if (lastOutputPath) {
-        setTaskState(prev => prev ? { ...prev, outputDir: lastOutputPath } : { total: 1, current: 1, outputDir: lastOutputPath });
+      const res = await runMeituCommandNativeBatch(imagePaths, prompt, outputDir);
+      
+      if (res.success) {
+        setTaskState({ total: imagePaths.length, current: imagePaths.length, outputDir: outputDir });
+      } else {
+        setLogs(prev => [...prev, `\n❌ 启动终端失败:\n${res.error}`]);
       }
 
     } catch (e: any) {

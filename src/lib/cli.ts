@@ -1,4 +1,5 @@
 import { Command } from '@tauri-apps/plugin-shell';
+import { writeTextFile } from '@tauri-apps/plugin-fs';
 
 let globalNpmPrefix: string | null = null;
 
@@ -178,5 +179,64 @@ export const runMeituCommand = async (args: string[], onLog?: (log: string) => v
     };
   } catch (e: any) {
     return { success: false, output: '', error: e.toString() };
+  }
+};
+
+export const runMeituCommandNativeBatch = async (imagePaths: string[], prompt: string, outputDir: string): Promise<{success: boolean, error?: string}> => {
+  try {
+    const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+    const env = getMeituEnv();
+    const resolved = await resolveCmd('meitu');
+
+    if (isWindows) {
+      const scriptPath = `${outputDir}\\run_meitu_batch.bat`;
+      let scriptContent = `@echo off\r\nchcp 65001\r\n`;
+      scriptContent += `set MEITU_OPENAPI_BASE_URL=${env.MEITU_OPENAPI_BASE_URL}\r\n`;
+      scriptContent += `set MEITU_OPENAPI_STRATEGY_BASE_URL=${env.MEITU_OPENAPI_STRATEGY_BASE_URL}\r\n`;
+      scriptContent += `set MEITU_OPENAPI_ACCESS_KEY=${env.MEITU_OPENAPI_ACCESS_KEY}\r\n`;
+      scriptContent += `set MEITU_OPENAPI_SECRET_KEY=${env.MEITU_OPENAPI_SECRET_KEY}\r\n`;
+      
+      let meituCmdStr = '';
+      if (resolved.base === 'cmd') {
+        meituCmdStr = `"${resolved.args[1]}"`;
+      } else {
+        meituCmdStr = `${resolved.base} ${resolved.args.join(' ')}`.trim();
+      }
+      
+      for (let i = 0; i < imagePaths.length; i++) {
+        scriptContent += `echo.\r\necho [${i+1}/${imagePaths.length}] Processing: ${imagePaths[i]}\r\n`;
+        scriptContent += `${meituCmdStr} image-superres-enhance --image_url "${imagePaths[i]}" --prompt "${prompt}" --download-dir "${outputDir}" --json\r\n`;
+      }
+      scriptContent += `echo.\r\necho All tasks completed!\r\npause\r\n`;
+      
+      await writeTextFile(scriptPath, scriptContent);
+      
+      const cmd = Command.create('cmd', ['/c', 'start', 'cmd', '/k', `"${scriptPath}"`]);
+      await cmd.execute();
+      return { success: true };
+    } else {
+      const scriptPath = `${outputDir}/run_meitu_batch.sh`;
+      let scriptContent = `#!/bin/bash\n`;
+      scriptContent += `export MEITU_OPENAPI_BASE_URL=${env.MEITU_OPENAPI_BASE_URL}\n`;
+      scriptContent += `export MEITU_OPENAPI_STRATEGY_BASE_URL=${env.MEITU_OPENAPI_STRATEGY_BASE_URL}\n`;
+      scriptContent += `export MEITU_OPENAPI_ACCESS_KEY=${env.MEITU_OPENAPI_ACCESS_KEY}\n`;
+      scriptContent += `export MEITU_OPENAPI_SECRET_KEY=${env.MEITU_OPENAPI_SECRET_KEY}\n`;
+      
+      const meituCmdStr = `${resolved.base} ${resolved.args.join(' ')}`.trim();
+      
+      for (let i = 0; i < imagePaths.length; i++) {
+        scriptContent += `echo "\\n[${i+1}/${imagePaths.length}] Processing: ${imagePaths[i]}"\n`;
+        scriptContent += `${meituCmdStr} image-superres-enhance --image_url "${imagePaths[i]}" --prompt "${prompt}" --download-dir "${outputDir}" --json\n`;
+      }
+      scriptContent += `echo "\\nAll tasks completed!"\n`;
+      
+      await writeTextFile(scriptPath, scriptContent);
+      
+      const cmd = Command.create('osascript', ['-e', `tell application "Terminal" to do script "bash \\"${scriptPath}\\""`]);
+      await cmd.execute();
+      return { success: true };
+    }
+  } catch (e: any) {
+    return { success: false, error: e.toString() };
   }
 };
