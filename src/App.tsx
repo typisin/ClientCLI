@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { checkNpm, checkMeituCli, installMeituCli, configAkSk, runMeituCommand, installNodeJs } from './lib/cli';
+import { checkNpm, checkMeituCli, installMeituCli, runMeituCommand, installNodeJs } from './lib/cli';
 import { AlertCircle, CheckCircle2, Settings, Terminal, TerminalSquare, Loader2, Play, Image as ImageIcon, Folder, FolderOpen, Download } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir, mkdir, exists } from '@tauri-apps/plugin-fs';
