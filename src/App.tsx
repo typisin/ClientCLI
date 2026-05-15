@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { checkNpm, checkMeituCli, installMeituCli, configAkSk, runMeituCommand } from './lib/cli';
-import { AlertCircle, CheckCircle2, Settings, Terminal, TerminalSquare, Loader2, Play, Image as ImageIcon, Folder, FolderOpen } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Settings, Terminal, TerminalSquare, Loader2, Play, Image as ImageIcon, Folder, FolderOpen, Download } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir, mkdir, exists } from '@tauri-apps/plugin-fs';
+import { open as openUrl } from '@tauri-apps/plugin-shell';
 
 type Page = 'home' | 'config';
 
@@ -285,7 +286,17 @@ function App() {
                 {envStatus.npm ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <AlertCircle className="w-5 h-5 text-amber-500" />}
                 <span className="text-sm text-gray-700 dark:text-gray-200">Node.js / npm</span>
               </div>
-              <span className="text-xs text-gray-500">{envStatus.npm ? '已安装' : '未安装'}</span>
+              {envStatus.npm ? (
+                <span className="text-xs text-gray-500">已安装</span>
+              ) : (
+                <button 
+                  onClick={() => openUrl('https://nodejs.org/zh-cn/download/prebuilt-installer')}
+                  className="px-3 py-1 text-xs font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-md transition-colors flex items-center gap-1"
+                >
+                  <Download className="w-3 h-3" />
+                  去下载安装
+                </button>
+              )}
             </div>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
