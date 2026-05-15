@@ -1,0 +1,27 @@
+stages:
+  - build
+
+build-windows:
+  stage: build
+  # 【注意】这里非常关键：你需要指定你们内部提供 Windows 编译环境的 Runner 的 tag
+  # 不同的公司 tag 名称不同，常见的有 windows、win-runner 等
+  # 如果这个任务一直处于 Pending（卡住）状态，你需要找你们的运维/基础架构组确认一下 Windows Runner 的 tag 是什么
+  tags:
+    - windows
+
+  # 假设你们的 Windows Runner 已经预装了 Node.js、Rust 和 MSVC 编译工具
+  script:
+    - echo "开始安装前端依赖..."
+    - npm install
+    
+    - echo "开始打包 Windows 客户端..."
+    - npm run tauri build
+
+  # 收集打包好的产物（安装包）
+  artifacts:
+    name: "MeituCLI-Windows-Release"
+    paths:
+      # Tauri v2 在 Windows 下通常会打出 .msi (安装包) 和 .exe (安装包)
+      - src-tauri/target/release/bundle/msi/*.msi
+      - src-tauri/target/release/bundle/nsis/*.exe
+    expire_in: 2 weeks
