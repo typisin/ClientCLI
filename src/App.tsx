@@ -38,6 +38,11 @@ function App() {
     const saved = localStorage.getItem('meitu_configured');
     if (saved !== 'true') {
       setPage('config');
+    } else {
+      const savedAk = localStorage.getItem('meitu_ak');
+      const savedSk = localStorage.getItem('meitu_sk');
+      if (savedAk) setAk(savedAk);
+      if (savedSk) setSk(savedSk);
     }
   }, []);
 
@@ -91,14 +96,13 @@ function App() {
       return;
     }
     setConfigStatus({ loading: true });
-    const res = await configAkSk(ak, sk);
-    if (res.success) {
-      setConfigStatus({ loading: false, success: '配置已成功保存到本地' });
-      localStorage.setItem('meitu_configured', 'true');
-      setTimeout(() => setPage('home'), 1500);
-    } else {
-      setConfigStatus({ loading: false, error: res.error || '配置保存失败' });
-    }
+    
+    // 不再调用 configAkSk，因为我们直接通过环境变量传给 CLI
+    setConfigStatus({ loading: false, success: '配置已成功保存到本地' });
+    localStorage.setItem('meitu_ak', ak);
+    localStorage.setItem('meitu_sk', sk);
+    localStorage.setItem('meitu_configured', 'true');
+    setTimeout(() => setPage('home'), 1500);
   };
 
   useEffect(() => {
