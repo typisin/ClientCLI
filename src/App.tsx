@@ -3,7 +3,6 @@ import { checkNpm, checkMeituCli, installMeituCli, configAkSk, runMeituCommand, 
 import { AlertCircle, CheckCircle2, Settings, Terminal, TerminalSquare, Loader2, Play, Image as ImageIcon, Folder, FolderOpen, Download } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir, mkdir, exists } from '@tauri-apps/plugin-fs';
-import { open as openUrl } from '@tauri-apps/plugin-shell';
 
 type Page = 'home' | 'config';
 
