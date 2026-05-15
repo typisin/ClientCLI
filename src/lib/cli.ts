@@ -131,11 +131,15 @@ export const installMeituCli = async (onLog?: (log: string) => void): Promise<{s
   }
 };
 
+const MEITU_ENV = {
+  MEITU_OPENAPI_BASE_URL: 'https://openapi.mtlab.meitu.com'
+};
+
 export const configAkSk = async (ak: string, sk: string): Promise<{success: boolean, error?: string}> => {
   try {
     const resolved = await resolveCmd('meitu');
-    const cmdAk = Command.create(resolved.base, [...resolved.args, 'config', 'set-ak', '--value', ak]);
-    const cmdSk = Command.create(resolved.base, [...resolved.args, 'config', 'set-sk', '--value', sk]);
+    const cmdAk = Command.create(resolved.base, [...resolved.args, 'config', 'set-ak', '--value', ak], { env: MEITU_ENV });
+    const cmdSk = Command.create(resolved.base, [...resolved.args, 'config', 'set-sk', '--value', sk], { env: MEITU_ENV });
 
     const outAk = await cmdAk.execute();
     if (outAk.code !== 0) return { success: false, error: outAk.stderr };
@@ -150,7 +154,7 @@ export const configAkSk = async (ak: string, sk: string): Promise<{success: bool
 export const runMeituCommand = async (args: string[], onLog?: (log: string) => void): Promise<{success: boolean, output: string, error?: string}> => {
   try {
     const resolved = await resolveCmd('meitu');
-    const cmd = Command.create(resolved.base, [...resolved.args, ...args]);
+    const cmd = Command.create(resolved.base, [...resolved.args, ...args], { env: MEITU_ENV });
 
     if (onLog) {
       cmd.stdout.on('data', line => onLog(`> ${line}`));
