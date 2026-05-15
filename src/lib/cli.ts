@@ -51,6 +51,49 @@ export const checkNpm = async (): Promise<boolean> => {
   return await runCommandWithFallbacks('node', ['-v']) && await runCommandWithFallbacks('npm', ['-v']);
 };
 
+export const installNodeJs = async (onLog?: (log: string) => void): Promise<{success: boolean, error?: string}> => {
+  const isWindows = navigator.userAgent.toLowerCase().includes('windows');
+  try {
+    if (isWindows) {
+      if (onLog) onLog('> 正在下载 Node.js 安装包...');
+      const downloadCmd = Command.create('powershell', [
+        '-Command',
+        "$ErrorActionPreference = 'Stop'; Invoke-WebRequest -Uri https://nodejs.org/dist/v20.14.0/node-v20.14.0-x64.msi -OutFile $env:TEMP\\node_installer.msi"
+      ]);
+      const dlRes = await downloadCmd.execute();
+      if (dlRes.code !== 0) {
+        return { success: false, error: '下载 Node.js 失败: ' + dlRes.stderr };
+      }
+
+      if (onLog) onLog('> 下载完成，正在启动安装程序，请在弹出的窗口中允许安装...');
+      const installCmd = Command.create('cmd', ['/c', 'start', '', '%TEMP%\\node_installer.msi']);
+      await installCmd.execute();
+      if (onLog) onLog('> 安装程序已启动！安装完成后请重启本软件。');
+      return { success: true };
+    } else {
+      if (onLog) onLog('> 正在下载 Node.js 安装包...');
+      const downloadCmd = Command.create('curl', [
+        '-L',
+        '-o',
+        '/tmp/node_installer.pkg',
+        'https://nodejs.org/dist/v20.14.0/node-v20.14.0.pkg'
+      ]);
+      const dlRes = await downloadCmd.execute();
+      if (dlRes.code !== 0) {
+        return { success: false, error: '下载 Node.js 失败: ' + dlRes.stderr };
+      }
+
+      if (onLog) onLog('> 下载完成，正在启动安装程序...');
+      const installCmd = Command.create('open', ['/tmp/node_installer.pkg']);
+      await installCmd.execute();
+      if (onLog) onLog('> 安装程序已启动！安装完成后请重启本软件。');
+      return { success: true };
+    }
+  } catch (e: any) {
+    return { success: false, error: e.toString() };
+  }
+};
+
 export const checkMeituCli = async (): Promise<boolean> => {
   return await runCommandWithFallbacks('meitu', ['--version']);
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { checkNpm, checkMeituCli, installMeituCli, configAkSk, runMeituCommand } from './lib/cli';
+import { checkNpm, checkMeituCli, installMeituCli, configAkSk, runMeituCommand, installNodeJs } from './lib/cli';
 import { AlertCircle, CheckCircle2, Settings, Terminal, TerminalSquare, Loader2, Play, Image as ImageIcon, Folder, FolderOpen, Download } from 'lucide-react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { readDir, mkdir, exists } from '@tauri-apps/plugin-fs';
@@ -47,6 +47,22 @@ function App() {
     const hasNpm = await checkNpm();
     const hasMeitu = await checkMeituCli();
     setEnvStatus({ npm: hasNpm, meitu: hasMeitu, checking: false });
+  };
+
+  const handleInstallNode = async () => {
+    setEnvStatus(prev => ({ ...prev, checking: true }));
+    setInstallLogs(['> 准备安装 Node.js...']);
+    const res = await installNodeJs((log) => {
+      setInstallLogs(prev => [...prev, log]);
+    });
+    
+    if (!res.success) {
+      setInstallLogs(prev => [...prev, `❌ 安装启动失败:\n${res.error}`]);
+      setEnvStatus(prev => ({ ...prev, checking: false }));
+    } else {
+      // 成功启动安装程序后，保持 checking 状态或者让用户重启
+      setEnvStatus(prev => ({ ...prev, checking: false }));
+    }
   };
 
   const handleInstallCli = async () => {
@@ -290,11 +306,11 @@ function App() {
                 <span className="text-xs text-gray-500">已安装</span>
               ) : (
                 <button 
-                  onClick={() => openUrl('https://nodejs.org/zh-cn/download/prebuilt-installer')}
+                  onClick={handleInstallNode}
                   className="px-3 py-1 text-xs font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-md transition-colors flex items-center gap-1"
                 >
                   <Download className="w-3 h-3" />
-                  去下载安装
+                  一键下载安装
                 </button>
               )}
             </div>
