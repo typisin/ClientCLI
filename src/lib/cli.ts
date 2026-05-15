@@ -135,8 +135,8 @@ export const getMeituEnv = () => {
   const ak = localStorage.getItem('meitu_ak') || '';
   const sk = localStorage.getItem('meitu_sk') || '';
   return {
-    MEITU_OPENAPI_BASE_URL: 'https://openapi.mtlab.meitu.com',
-    MEITU_OPENAPI_STRATEGY_BASE_URL: 'https://openapi.mtlab.meitu.com',
+    MEITU_OPENAPI_BASE_URL: 'https://openapi.meitu.com',
+    MEITU_OPENAPI_STRATEGY_BASE_URL: 'https://openapi.meitu.com',
     MEITU_OPENAPI_ACCESS_KEY: ak,
     MEITU_OPENAPI_SECRET_KEY: sk
   };
